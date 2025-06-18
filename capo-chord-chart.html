@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Capo Chord Chart</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        
+        th.chord-header {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        
+        td {
+            padding: 8px 6px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+            border-right: 1px solid #ecf0f1;
+            transition: background-color 0.2s ease;
+        }
+        
+        td:hover {
+            background: #f8f9fa;
+        }
+        
+        .chord-name {
+            background: linear-gradient(45deg, #e67e22, #d35400);
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        
+        .easy-chord {
+            background: #d5f4e6;
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .barre-chord {
+            background: #ffeaa7;
+            color: #e17055;
+            font-weight: 600;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .table-container {
+                padding: 10px;
+            }
+            
+            table {
+                font-size: 10px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+            }
+            
+            .legend {
+                gap: 15px;
+                padding: 10px;
+            }
+            
+            .legend-item {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎸 Guitar Capo Chord Chart</h1>
+            <p>Find the easiest chord shapes for any capo position</p>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="chord-header">Original<br>Chord</th>
+                        <th>Capo 1</th>
+                        <th>Capo 2</th>
+                        <th>Capo 3</th>
+                        <th>Capo 4</th>
+                        <th>Capo 5</th>
+                        <th>Capo 6</th>
+                        <th>Capo 7</th>
+                        <th>Capo 8</th>
+                        <th>Capo 9</th>
+                        <th>Capo 10</th>
+                        <th>Capo 11</th>
+                        <th>Capo 12</th>
+                    </tr>
+                </thead>
+                <tbody id="chord-table">
+                    <!-- Table content will be generated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color easy-chord"></div>
+                <span>Easy Open Chord</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color barre-chord"></div>
+                <span>Barre Chord</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Define chord progressions and their difficulty
+        const chordData = {
+            'C': { shapes: ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B', 'C'] },
+            'D': { shapes: ['D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B', 'C', 'C#/Db', 'D'] },
+            'E': { shapes: ['E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B', 'C', 'C#/Db', 'D', 'D#/Eb', 'E'] },
+            'F': { shapes: ['F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B', 'C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F'] },
+            'G': { shapes: ['G', 'G#/Ab', 'A', 'A#/Bb', 'B', 'C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G'] },
+            'A': { shapes: ['A', 'A#/Bb', 'B', 'C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A'] },
+            'B': { shapes: ['B', 'C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'] },
+            'Am': { shapes: ['Am', 'A#m/Bbm', 'Bm', 'Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm', 'Gm', 'G#m/Abm', 'Am'] },
+            'Bm': { shapes: ['Bm', 'Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm', 'Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm'] },
+            'Cm': { shapes: ['Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm', 'Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm', 'Cm'] },
+            'Dm': { shapes: ['Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm', 'Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm', 'Cm', 'C#m/Dbm', 'Dm'] },
+            'Em': { shapes: ['Em', 'Fm', 'F#m/Gbm', 'Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm', 'Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em'] },
+            'F#m': { shapes: ['F#m/Gbm', 'Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm', 'Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm'] },
+            'Gm': { shapes: ['Gm', 'G#m/Abm', 'Am', 'A#m/Bbm', 'Bm', 'Cm', 'C#m/Dbm', 'Dm', 'D#m/Ebm', 'Em', 'Fm', 'F#m/Gbm', 'Gm'] }
+        };
+
+        // Define which chords are easy (open) vs barre chords
+        const easyChords = ['C', 'D', 'E', 'G', 'A', 'Am', 'Dm', 'Em'];
+        const barreChords = ['F', 'B', 'Bm', 'Cm', 'F#m/Gbm', 'Gm', 'A#/Bb', 'A#m/Bbm', 'C#/Db', 'C#m/Dbm', 'D#/Eb', 'D#m/Ebm', 'F#/Gb', 'G#/Ab', 'G#m/Abm', 'Fm'];
+
+        function isEasyChord(chord) {
+            return easyChords.includes(chord);
+        }
+
+        function isBarreChord(chord) {
+            return barreChords.includes(chord) || chord.includes('#') || chord.includes('b');
+        }
+
+        function generateTable() {
+            const tbody = document.getElementById('chord-table');
+            
+            Object.keys(chordData).forEach(originalChord => {
+                const row = document.createElement('tr');
+                
+                // Original chord column
+                const chordCell = document.createElement('td');
+                chordCell.textContent = originalChord;
+                chordCell.className = 'chord-name';
+                row.appendChild(chordCell);
+                
+                // Capo positions 1-12
+                for (let capo = 1; capo <= 12; capo++) {
+                    const cell = document.createElement('td');
+                    const resultChord = chordData[originalChord].shapes[capo];
+                    cell.textContent = resultChord;
+                    
+                    if (isEasyChord(resultChord)) {
+                        cell.className = 'easy-chord';
+                    } else if (isBarreChord(resultChord)) {
+                        cell.className = 'barre-chord';
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Generate the table when the page loads
+        document.addEventListener('DOMContentLoaded', generateTable);
+    </script>
+</body>
+</html>
