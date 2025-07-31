@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Guitar Capo Optimizer</string>
+    <string name="enter_chords">Enter Chords:</string>
+    <string name="chord_input_hint">C Am F G</string>
+    <string name="add_chord">Add Chord</string>
+    <string name="clear_all">Clear All</string>
+    <string name="find_optimal_capo">FIND OPTIMAL CAPO</string>
+    <string name="current_chord_list">Current Chord List:</string>
+    <string name="optimal_capo">🎯 OPTIMAL: Capo on Fret %d</string>
+    <string name="barre_chords_count">Barre Chords: %d of %d</string>
+    <string name="original_with_capo">Original → With Capo Fret %d</string>
+    <string name="view_all_positions">VIEW ALL POSITIONS</string>
+    <string name="try_again">Try Again</string>
+    <string name="save_progression">Save Progression</string>
+    <string name="all_capo_positions">All Capo Positions</string>
+    <string name="capo_fret">Capo Fret</string>
+    <string name="barre_chords">Barre Chords</string>
+    <string name="best_option">🎯 BEST</string>
+    <string name="shape_open">(%s Shape - Open)</string>
+    <string name="shape_barre">(%s Shape - Barre) ⚠️</string>
+</resources>
