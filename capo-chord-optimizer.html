@@ -95,7 +95,7 @@
         <div class="content">
             <div class="input-section">
                 <label for="chordInput">Enter Chords:</label>
-                <input type="text" id="chordInput" placeholder="C Am F G" />
+                <input type="text" id="chordInput" placeholder="C Am F G7 Dmaj7 F#m" />
                 <div class="buttons">
                     <button class="btn-primary" onclick="addChords()">Add Chords</button>
                     <button class="btn-secondary" onclick="clearAll()">Clear All</button>
@@ -128,75 +128,38 @@
         let currentChords = [];
         let allResults = [];
 
-        const chordMappings = {
-            'C': [
-                {capo: 0, shape: 'C', barre: false}, {capo: 1, shape: 'C', barre: true}, {capo: 2, shape: 'A', barre: false},
-                {capo: 3, shape: 'G', barre: false}, {capo: 4, shape: 'E', barre: false}, {capo: 5, shape: 'E', barre: true},
-                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'G', barre: false}, {capo: 8, shape: 'G', barre: true},
-                {capo: 9, shape: 'A', barre: false}, {capo: 10, shape: 'A', barre: true}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'C', barre: false}
-            ],
-            'D': [
-                {capo: 0, shape: 'D', barre: false}, {capo: 1, shape: 'D', barre: true}, {capo: 2, shape: 'C', barre: false},
-                {capo: 3, shape: 'A', barre: false}, {capo: 4, shape: 'G', barre: false}, {capo: 5, shape: 'E', barre: false},
-                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'G', barre: false},
-                {capo: 9, shape: 'G', barre: true}, {capo: 10, shape: 'A', barre: false}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'D', barre: false}
-            ],
-            'E': [
-                {capo: 0, shape: 'E', barre: false}, {capo: 1, shape: 'E', barre: true}, {capo: 2, shape: 'D', barre: false},
-                {capo: 3, shape: 'C', barre: false}, {capo: 4, shape: 'A', barre: false}, {capo: 5, shape: 'G', barre: false},
-                {capo: 6, shape: 'E', barre: false}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'E', barre: true},
-                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'G', barre: true}, {capo: 11, shape: 'A', barre: false}, {capo: 12, shape: 'E', barre: false}
-            ],
-            'F': [
-                {capo: 0, shape: 'F', barre: true}, {capo: 1, shape: 'E', barre: false}, {capo: 2, shape: 'E', barre: true},
-                {capo: 3, shape: 'D', barre: false}, {capo: 4, shape: 'C', barre: false}, {capo: 5, shape: 'A', barre: false},
-                {capo: 6, shape: 'G', barre: false}, {capo: 7, shape: 'E', barre: false}, {capo: 8, shape: 'E', barre: true},
-                {capo: 9, shape: 'E', barre: true}, {capo: 10, shape: 'G', barre: false}, {capo: 11, shape: 'G', barre: true}, {capo: 12, shape: 'F', barre: true}
-            ],
-            'G': [
-                {capo: 0, shape: 'G', barre: false}, {capo: 1, shape: 'G', barre: true}, {capo: 2, shape: 'E', barre: false},
-                {capo: 3, shape: 'E', barre: true}, {capo: 4, shape: 'D', barre: false}, {capo: 5, shape: 'C', barre: false},
-                {capo: 6, shape: 'A', barre: false}, {capo: 7, shape: 'G', barre: false}, {capo: 8, shape: 'E', barre: false},
-                {capo: 9, shape: 'E', barre: true}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'G', barre: false}, {capo: 12, shape: 'G', barre: false}
-            ],
-            'A': [
-                {capo: 0, shape: 'A', barre: false}, {capo: 1, shape: 'A', barre: true}, {capo: 2, shape: 'G', barre: false},
-                {capo: 3, shape: 'E', barre: false}, {capo: 4, shape: 'E', barre: true}, {capo: 5, shape: 'D', barre: false},
-                {capo: 6, shape: 'C', barre: false}, {capo: 7, shape: 'A', barre: false}, {capo: 8, shape: 'G', barre: false},
-                {capo: 9, shape: 'E', barre: false}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'A', barre: false}
-            ],
-            'B': [
-                {capo: 0, shape: 'B', barre: true}, {capo: 1, shape: 'A', barre: false}, {capo: 2, shape: 'A', barre: true},
-                {capo: 3, shape: 'G', barre: false}, {capo: 4, shape: 'E', barre: false}, {capo: 5, shape: 'E', barre: true},
-                {capo: 6, shape: 'D', barre: false}, {capo: 7, shape: 'C', barre: false}, {capo: 8, shape: 'A', barre: false},
-                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'E', barre: false}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'B', barre: true}
-            ],
-            'Am': [
-                {capo: 0, shape: 'A', barre: false}, {capo: 1, shape: 'A', barre: true}, {capo: 2, shape: 'G', barre: false},
-                {capo: 3, shape: 'E', barre: false}, {capo: 4, shape: 'E', barre: true}, {capo: 5, shape: 'D', barre: false},
-                {capo: 6, shape: 'C', barre: false}, {capo: 7, shape: 'A', barre: false}, {capo: 8, shape: 'G', barre: false},
-                {capo: 9, shape: 'E', barre: false}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'A', barre: false}
-            ],
-            'Dm': [
-                {capo: 0, shape: 'D', barre: false}, {capo: 1, shape: 'D', barre: true}, {capo: 2, shape: 'C', barre: false},
-                {capo: 3, shape: 'A', barre: false}, {capo: 4, shape: 'G', barre: false}, {capo: 5, shape: 'E', barre: false},
-                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'G', barre: false},
-                {capo: 9, shape: 'G', barre: true}, {capo: 10, shape: 'A', barre: false}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'D', barre: false}
-            ],
-            'Em': [
-                {capo: 0, shape: 'E', barre: false}, {capo: 1, shape: 'E', barre: true}, {capo: 2, shape: 'D', barre: false},
-                {capo: 3, shape: 'C', barre: false}, {capo: 4, shape: 'A', barre: false}, {capo: 5, shape: 'G', barre: false},
-                {capo: 6, shape: 'E', barre: false}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'E', barre: true},
-                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'G', barre: true}, {capo: 11, shape: 'A', barre: false}, {capo: 12, shape: 'E', barre: false}
-            ]
+        const chordShapes = {
+            major: [{shape: 'C', barre: false}, {shape: 'C', barre: true}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'A', barre: true}],
+            minor: [{shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}],
+            seventh: [{shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: false}, {shape: 'A', barre: false}, {shape: 'A', barre: true}],
+            minor7: [{shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'D', barre: true}, {shape: 'C', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}],
+            major7: [{shape: 'C', barre: true}, {shape: 'C', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: true}, {shape: 'G', barre: true}, {shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'A', barre: true}]
         };
+        
+        const chordNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        function getChordMapping(chord, capo) {
+            const noteIndex = chordNotes.indexOf(chord.replace(/[m7maj]+/, ''));
+            if (noteIndex === -1) return null;
+            
+            const adjustedIndex = (noteIndex + capo) % 12;
+            let chordType = 'major';
+            if (chord.includes('maj7')) chordType = 'major7';
+            else if (chord.includes('m7')) chordType = 'minor7';
+            else if (chord.includes('7')) chordType = 'seventh';
+            else if (chord.includes('m')) chordType = 'minor';
+            
+            return chordShapes[chordType][adjustedIndex];
+        }
 
         function parseChords(input) {
             return input.trim().split(/[,\s-]+/).filter(c => c).map(c => c.trim());
         }
 
         function isValidChord(chord) {
-            return chordMappings.hasOwnProperty(chord);
+            const baseNote = chord.replace(/[m7maj]+/, '');
+            const validTypes = /^[A-G][#]?(m|7|m7|maj7)?$/;
+            return validTypes.test(chord) && chordNotes.includes(baseNote);
         }
 
         function showError(message) {
@@ -212,7 +175,7 @@
             const validChords = newChords.filter(isValidChord);
             
             if (validChords.length !== newChords.length) {
-                showError('Some chords were invalid. Supported: C, D, E, F, G, A, B, Am, Dm, Em');
+                showError('Some chords were invalid. Supported: A-G# with m, 7, m7, maj7 variations');
             }
             
             currentChords = [...new Set([...currentChords, ...validChords])];
@@ -252,7 +215,10 @@
         }
 
         function formatChordName(chord) {
-            if (chord.endsWith('m')) return `${chord.slice(0, -1)} Minor`;
+            if (chord.includes('maj7')) return `${chord.replace('maj7', '')} Major 7th`;
+            if (chord.includes('m7')) return `${chord.replace('m7', '')} Minor 7th`;
+            if (chord.includes('7')) return `${chord.replace('7', '')} 7th`;
+            if (chord.includes('m')) return `${chord.replace('m', '')} Minor`;
             return `${chord} Major`;
         }
 
@@ -265,8 +231,8 @@
                 const mappings = [];
                 
                 for (const chord of currentChords) {
-                    const mapping = chordMappings[chord][capo];
-                    if (mapping.barre) barreCount++;
+                    const mapping = getChordMapping(chord, capo);
+                    if (mapping && mapping.barre) barreCount++;
                     mappings.push({ chord, ...mapping });
                 }
                 
