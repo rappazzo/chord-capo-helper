@@ -128,28 +128,40 @@
         let currentChords = [];
         let allResults = [];
 
-        const chordShapes = {
-            major: [{shape: 'C', barre: false}, {shape: 'C', barre: true}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'A', barre: true}],
-            minor: [{shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}],
-            seventh: [{shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: false}, {shape: 'A', barre: false}, {shape: 'A', barre: true}],
-            minor7: [{shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'D', barre: true}, {shape: 'C', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}],
-            major7: [{shape: 'C', barre: true}, {shape: 'C', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'E', barre: true}, {shape: 'G', barre: true}, {shape: 'G', barre: true}, {shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'A', barre: true}]
+        const chordMappings = {
+            'C': [{shape: 'C', barre: false}, {shape: 'C', barre: true}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'A', barre: true}],
+            'C#': [{shape: 'C', barre: true}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'C', barre: false}],
+            'D': [{shape: 'D', barre: false}, {shape: 'D', barre: true}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}],
+            'D#': [{shape: 'D', barre: true}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'D', barre: false}],
+            'E': [{shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'A', barre: false}],
+            'F': [{shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}],
+            'F#': [{shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}, {shape: 'G', barre: true}],
+            'G': [{shape: 'G', barre: false}, {shape: 'G', barre: true}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}],
+            'G#': [{shape: 'G', barre: true}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'G', barre: false}],
+            'A': [{shape: 'A', barre: false}, {shape: 'A', barre: true}, {shape: 'G', barre: false}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}],
+            'A#': [{shape: 'A', barre: true}, {shape: 'G', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}],
+            'B': [{shape: 'A', barre: true}, {shape: 'A', barre: true}, {shape: 'G', barre: false}, {shape: 'F', barre: true}, {shape: 'E', barre: false}, {shape: 'D', barre: false}, {shape: 'C', barre: false}, {shape: 'A', barre: false}, {shape: 'G', barre: false}, {shape: 'E', barre: false}, {shape: 'F', barre: true}, {shape: 'F', barre: true}]
         };
         
         const chordNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         
         function getChordMapping(chord, capo) {
-            const noteIndex = chordNotes.indexOf(chord.replace(/[m7maj]+/, ''));
-            if (noteIndex === -1) return null;
+            const baseNote = chord.replace(/[m7maj]+/, '');
+            const mapping = chordMappings[baseNote];
+            if (!mapping) return null;
             
-            const adjustedIndex = (noteIndex + capo) % 12;
-            let chordType = 'major';
-            if (chord.includes('maj7')) chordType = 'major7';
-            else if (chord.includes('m7')) chordType = 'minor7';
-            else if (chord.includes('7')) chordType = 'seventh';
-            else if (chord.includes('m')) chordType = 'minor';
+            const result = mapping[capo];
             
-            return chordShapes[chordType][adjustedIndex];
+            // Adjust barre requirements for chord types
+            if (chord.includes('7') && !chord.includes('maj7') && !chord.includes('m7')) {
+                // 7th chords: some open shapes become barre
+                if (['C', 'D', 'E', 'G', 'A'].includes(result.shape) && capo === 0) {
+                    return {shape: result.shape, barre: false};
+                }
+                return {shape: result.shape, barre: true};
+            }
+            
+            return result;
         }
 
         function parseChords(input) {
