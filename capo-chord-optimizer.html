@@ -72,6 +72,13 @@
         .mapping-arrow { margin: 0 12px; font-weight: bold; color: #666; }
         .mapping-result { flex: 2; }
         .barre-warning { color: #ff5722; font-weight: 500; }
+        .chord-tab { 
+            font-family: 'Courier New', monospace; font-size: 12px; 
+            background: #f0f0f0; padding: 8px; border-radius: 4px; 
+            margin-top: 4px; line-height: 1.2;
+        }
+        .tab-strings { color: #666; }
+        .tab-frets { font-weight: bold; }
         .all-positions { margin-top: 16px; }
         .position-item { 
             display: flex; align-items: center; padding: 12px; background: white;
@@ -156,7 +163,38 @@
                 isBarre = !openChords.includes(resultChord);
             }
             
-            return {shape, barre: isBarre};
+            return {shape, barre: isBarre, tab: getChordTab(chord, capo)};
+        }
+        
+        function getChordTab(chord, capo) {
+            const baseNote = chord.replace(/[m7maj]+/, '');
+            const noteIndex = chordNotes.indexOf(baseNote);
+            const targetNote = chordNotes[(noteIndex + capo) % 12];
+            const isMinor = chord.includes('m') && !chord.includes('maj');
+            
+            // Basic chord tabs (relative to capo)
+            const tabs = {
+                'C': isMinor ? 'x32010' : 'x32010',
+                'D': isMinor ? 'xx0231' : 'xx0232', 
+                'E': isMinor ? '022000' : '022100',
+                'F': isMinor ? '133111' : '133211',
+                'G': isMinor ? '355333' : '320003',
+                'A': isMinor ? 'x02210' : 'x02220',
+                'C#': '446664', 'D#': '668886', 'F#': '244322',
+                'G#': '466544', 'A#': '688766', 'B': isMinor ? '224432' : '224442'
+            };
+            
+            let tab = tabs[targetNote] || 'x02220';
+            
+            // Adjust for capo position
+            if (capo > 0) {
+                tab = tab.split('').map(fret => {
+                    if (fret === 'x' || fret === '0') return fret;
+                    return String(parseInt(fret) + capo);
+                }).join('');
+            }
+            
+            return tab;
         }
         
         const chordNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -269,6 +307,10 @@
                         <div class="mapping-arrow">→</div>
                         <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
                             ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
+                            <div class="chord-tab">
+                                <div class="tab-strings">E A D G B E</div>
+                                <div class="tab-frets">${m.tab.split('').join(' ')}</div>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
@@ -308,6 +350,10 @@
                         <div class="mapping-arrow">→</div>
                         <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
                             ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
+                            <div class="chord-tab">
+                                <div class="tab-strings">E A D G B E</div>
+                                <div class="tab-frets">${m.tab.split('').join(' ')}</div>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
