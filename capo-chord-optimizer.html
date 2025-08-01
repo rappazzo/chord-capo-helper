@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Capo Chord Optimizer</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0; padding: 20px; background: #f5f5f5; min-height: 100vh;
+        }
+        .container { 
+            max-width: 600px; margin: 0 auto; background: white; 
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #1976d2, #1565c0); color: white; 
+            padding: 24px; text-align: center;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .content { padding: 24px; }
+        .input-section { margin-bottom: 24px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        input { 
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 16px; transition: border-color 0.2s;
+        }
+        input:focus { outline: none; border-color: #1976d2; }
+        .buttons { display: flex; gap: 12px; margin-top: 12px; }
+        button { 
+            flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px;
+            font-weight: 500; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary:hover { background: #1565c0; }
+        .btn-secondary { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-find { 
+            width: 100%; padding: 16px; background: #4caf50; color: white; 
+            font-size: 18px; font-weight: 600; margin: 24px 0;
+        }
+        .btn-find:hover { background: #45a049; }
+        .btn-find:disabled { background: #ccc; cursor: not-allowed; }
+        .chord-list { margin: 16px 0; }
+        .chord-item { 
+            display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .chord-item:last-child { border-bottom: none; }
+        .chord-dot { width: 8px; height: 8px; background: #333; border-radius: 50%; margin-right: 12px; }
+        .chord-name { flex: 1; font-size: 16px; }
+        .remove-btn { 
+            background: none; border: none; color: #999; cursor: pointer; 
+            font-size: 18px; padding: 4px;
+        }
+        .remove-btn:hover { color: #f44336; }
+        .results { margin-top: 24px; }
+        .optimal-result { 
+            background: linear-gradient(135deg, #4caf50, #45a049); color: white; 
+            padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 16px;
+        }
+        .optimal-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .barre-count { font-size: 16px; opacity: 0.9; }
+        .mappings { background: #f9f9f9; border-radius: 8px; padding: 16px; }
+        .mapping-header { font-weight: 600; margin-bottom: 12px; color: #333; }
+        .mapping-item { 
+            display: flex; align-items: center; padding: 8px 0; 
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .mapping-item:last-child { border-bottom: none; }
+        .mapping-original { flex: 1; }
+        .mapping-arrow { margin: 0 12px; font-weight: bold; color: #666; }
+        .mapping-result { flex: 2; }
+        .barre-warning { color: #ff5722; font-weight: 500; }
+        .all-positions { margin-top: 16px; }
+        .position-item { 
+            display: flex; align-items: center; padding: 12px; background: white;
+            border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .position-item:hover { background: #f5f5f5; border-color: #1976d2; }
+        .position-fret { font-weight: 600; margin-right: 16px; min-width: 60px; }
+        .position-count { flex: 1; }
+        .position-best { color: #4caf50; font-weight: 600; }
+        .hidden { display: none; }
+        .error { color: #f44336; font-size: 14px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎸 Guitar Capo Optimizer</h1>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <label for="chordInput">Enter Chords:</label>
+                <input type="text" id="chordInput" placeholder="C Am F G" />
+                <div class="buttons">
+                    <button class="btn-primary" onclick="addChords()">Add Chords</button>
+                    <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+                </div>
+                <div id="error" class="error hidden"></div>
+            </div>
+            
+            <div>
+                <label>Current Chord List:</label>
+                <div id="chordList" class="chord-list"></div>
+            </div>
+            
+            <button id="findBtn" class="btn-find" onclick="findOptimalCapo()" disabled>
+                FIND OPTIMAL CAPO
+            </button>
+            
+            <div id="results" class="results hidden">
+                <div id="optimalResult" class="optimal-result"></div>
+                <div id="mappings" class="mappings"></div>
+                <button class="btn-secondary" onclick="showAllPositions()" style="width: 100%; margin-top: 16px;">
+                    VIEW ALL POSITIONS
+                </button>
+            </div>
+            
+            <div id="allPositions" class="all-positions hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentChords = [];
+        let allResults = [];
+
+        const chordMappings = {
+            'C': [
+                {capo: 0, shape: 'C', barre: false}, {capo: 1, shape: 'C', barre: true}, {capo: 2, shape: 'A', barre: false},
+                {capo: 3, shape: 'G', barre: false}, {capo: 4, shape: 'E', barre: false}, {capo: 5, shape: 'E', barre: true},
+                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'G', barre: false}, {capo: 8, shape: 'G', barre: true},
+                {capo: 9, shape: 'A', barre: false}, {capo: 10, shape: 'A', barre: true}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'C', barre: false}
+            ],
+            'D': [
+                {capo: 0, shape: 'D', barre: false}, {capo: 1, shape: 'D', barre: true}, {capo: 2, shape: 'C', barre: false},
+                {capo: 3, shape: 'A', barre: false}, {capo: 4, shape: 'G', barre: false}, {capo: 5, shape: 'E', barre: false},
+                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'G', barre: false},
+                {capo: 9, shape: 'G', barre: true}, {capo: 10, shape: 'A', barre: false}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'D', barre: false}
+            ],
+            'E': [
+                {capo: 0, shape: 'E', barre: false}, {capo: 1, shape: 'E', barre: true}, {capo: 2, shape: 'D', barre: false},
+                {capo: 3, shape: 'C', barre: false}, {capo: 4, shape: 'A', barre: false}, {capo: 5, shape: 'G', barre: false},
+                {capo: 6, shape: 'E', barre: false}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'E', barre: true},
+                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'G', barre: true}, {capo: 11, shape: 'A', barre: false}, {capo: 12, shape: 'E', barre: false}
+            ],
+            'F': [
+                {capo: 0, shape: 'F', barre: true}, {capo: 1, shape: 'E', barre: false}, {capo: 2, shape: 'E', barre: true},
+                {capo: 3, shape: 'D', barre: false}, {capo: 4, shape: 'C', barre: false}, {capo: 5, shape: 'A', barre: false},
+                {capo: 6, shape: 'G', barre: false}, {capo: 7, shape: 'E', barre: false}, {capo: 8, shape: 'E', barre: true},
+                {capo: 9, shape: 'E', barre: true}, {capo: 10, shape: 'G', barre: false}, {capo: 11, shape: 'G', barre: true}, {capo: 12, shape: 'F', barre: true}
+            ],
+            'G': [
+                {capo: 0, shape: 'G', barre: false}, {capo: 1, shape: 'G', barre: true}, {capo: 2, shape: 'E', barre: false},
+                {capo: 3, shape: 'E', barre: true}, {capo: 4, shape: 'D', barre: false}, {capo: 5, shape: 'C', barre: false},
+                {capo: 6, shape: 'A', barre: false}, {capo: 7, shape: 'G', barre: false}, {capo: 8, shape: 'E', barre: false},
+                {capo: 9, shape: 'E', barre: true}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'G', barre: false}, {capo: 12, shape: 'G', barre: false}
+            ],
+            'A': [
+                {capo: 0, shape: 'A', barre: false}, {capo: 1, shape: 'A', barre: true}, {capo: 2, shape: 'G', barre: false},
+                {capo: 3, shape: 'E', barre: false}, {capo: 4, shape: 'E', barre: true}, {capo: 5, shape: 'D', barre: false},
+                {capo: 6, shape: 'C', barre: false}, {capo: 7, shape: 'A', barre: false}, {capo: 8, shape: 'G', barre: false},
+                {capo: 9, shape: 'E', barre: false}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'A', barre: false}
+            ],
+            'B': [
+                {capo: 0, shape: 'B', barre: true}, {capo: 1, shape: 'A', barre: false}, {capo: 2, shape: 'A', barre: true},
+                {capo: 3, shape: 'G', barre: false}, {capo: 4, shape: 'E', barre: false}, {capo: 5, shape: 'E', barre: true},
+                {capo: 6, shape: 'D', barre: false}, {capo: 7, shape: 'C', barre: false}, {capo: 8, shape: 'A', barre: false},
+                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'E', barre: false}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'B', barre: true}
+            ],
+            'Am': [
+                {capo: 0, shape: 'A', barre: false}, {capo: 1, shape: 'A', barre: true}, {capo: 2, shape: 'G', barre: false},
+                {capo: 3, shape: 'E', barre: false}, {capo: 4, shape: 'E', barre: true}, {capo: 5, shape: 'D', barre: false},
+                {capo: 6, shape: 'C', barre: false}, {capo: 7, shape: 'A', barre: false}, {capo: 8, shape: 'G', barre: false},
+                {capo: 9, shape: 'E', barre: false}, {capo: 10, shape: 'E', barre: true}, {capo: 11, shape: 'E', barre: true}, {capo: 12, shape: 'A', barre: false}
+            ],
+            'Dm': [
+                {capo: 0, shape: 'D', barre: false}, {capo: 1, shape: 'D', barre: true}, {capo: 2, shape: 'C', barre: false},
+                {capo: 3, shape: 'A', barre: false}, {capo: 4, shape: 'G', barre: false}, {capo: 5, shape: 'E', barre: false},
+                {capo: 6, shape: 'E', barre: true}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'G', barre: false},
+                {capo: 9, shape: 'G', barre: true}, {capo: 10, shape: 'A', barre: false}, {capo: 11, shape: 'A', barre: true}, {capo: 12, shape: 'D', barre: false}
+            ],
+            'Em': [
+                {capo: 0, shape: 'E', barre: false}, {capo: 1, shape: 'E', barre: true}, {capo: 2, shape: 'D', barre: false},
+                {capo: 3, shape: 'C', barre: false}, {capo: 4, shape: 'A', barre: false}, {capo: 5, shape: 'G', barre: false},
+                {capo: 6, shape: 'E', barre: false}, {capo: 7, shape: 'E', barre: true}, {capo: 8, shape: 'E', barre: true},
+                {capo: 9, shape: 'G', barre: false}, {capo: 10, shape: 'G', barre: true}, {capo: 11, shape: 'A', barre: false}, {capo: 12, shape: 'E', barre: false}
+            ]
+        };
+
+        function parseChords(input) {
+            return input.trim().split(/[,\s-]+/).filter(c => c).map(c => c.trim());
+        }
+
+        function isValidChord(chord) {
+            return chordMappings.hasOwnProperty(chord);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            setTimeout(() => errorEl.classList.add('hidden'), 3000);
+        }
+
+        function addChords() {
+            const input = document.getElementById('chordInput').value;
+            const newChords = parseChords(input);
+            const validChords = newChords.filter(isValidChord);
+            
+            if (validChords.length !== newChords.length) {
+                showError('Some chords were invalid. Supported: C, D, E, F, G, A, B, Am, Dm, Em');
+            }
+            
+            currentChords = [...new Set([...currentChords, ...validChords])];
+            document.getElementById('chordInput').value = '';
+            updateChordList();
+        }
+
+        function removeChord(chord) {
+            currentChords = currentChords.filter(c => c !== chord);
+            updateChordList();
+        }
+
+        function clearAll() {
+            currentChords = [];
+            updateChordList();
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('allPositions').classList.add('hidden');
+        }
+
+        function updateChordList() {
+            const listEl = document.getElementById('chordList');
+            const findBtn = document.getElementById('findBtn');
+            
+            if (currentChords.length === 0) {
+                listEl.innerHTML = '<div style="color: #999; font-style: italic;">No chords added yet</div>';
+                findBtn.disabled = true;
+            } else {
+                listEl.innerHTML = currentChords.map(chord => `
+                    <div class="chord-item">
+                        <div class="chord-dot"></div>
+                        <div class="chord-name">${formatChordName(chord)}</div>
+                        <button class="remove-btn" onclick="removeChord('${chord}')">×</button>
+                    </div>
+                `).join('');
+                findBtn.disabled = false;
+            }
+        }
+
+        function formatChordName(chord) {
+            if (chord.endsWith('m')) return `${chord.slice(0, -1)} Minor`;
+            return `${chord} Major`;
+        }
+
+        function findOptimalCapo() {
+            if (currentChords.length === 0) return;
+            
+            allResults = [];
+            for (let capo = 0; capo <= 12; capo++) {
+                let barreCount = 0;
+                const mappings = [];
+                
+                for (const chord of currentChords) {
+                    const mapping = chordMappings[chord][capo];
+                    if (mapping.barre) barreCount++;
+                    mappings.push({ chord, ...mapping });
+                }
+                
+                allResults.push({ capo, barreCount, mappings });
+            }
+            
+            allResults.sort((a, b) => a.barreCount - b.barreCount || a.capo - b.capo);
+            showResults();
+        }
+
+        function showResults() {
+            const optimal = allResults[0];
+            document.getElementById('optimalResult').innerHTML = `
+                <div class="optimal-title">🎯 OPTIMAL: Capo on Fret ${optimal.capo}</div>
+                <div class="barre-count">Barre Chords: ${optimal.barreCount} of ${optimal.mappings.length}</div>
+            `;
+            
+            document.getElementById('mappings').innerHTML = `
+                <div class="mapping-header">Original → With Capo Fret ${optimal.capo}</div>
+                ${optimal.mappings.map(m => `
+                    <div class="mapping-item">
+                        <div class="mapping-original">${formatChordName(m.chord)}</div>
+                        <div class="mapping-arrow">→</div>
+                        <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
+                            ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('allPositions').classList.add('hidden');
+        }
+
+        function showAllPositions() {
+            const bestCount = allResults[0].barreCount;
+            document.getElementById('allPositions').innerHTML = `
+                <h3>All Capo Positions</h3>
+                ${allResults.map(result => `
+                    <div class="position-item" onclick="showPositionDetails(${result.capo})">
+                        <div class="position-fret">Fret ${result.capo}</div>
+                        <div class="position-count">${result.barreCount} of ${result.mappings.length} barre chords</div>
+                        ${result.barreCount === bestCount ? '<div class="position-best">🎯 BEST</div>' : ''}
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('allPositions').classList.remove('hidden');
+        }
+
+        function showPositionDetails(capo) {
+            const result = allResults.find(r => r.capo === capo);
+            document.getElementById('optimalResult').innerHTML = `
+                <div class="optimal-title">Capo on Fret ${result.capo}</div>
+                <div class="barre-count">Barre Chords: ${result.barreCount} of ${result.mappings.length}</div>
+            `;
+            
+            document.getElementById('mappings').innerHTML = `
+                <div class="mapping-header">Original → With Capo Fret ${result.capo}</div>
+                ${result.mappings.map(m => `
+                    <div class="mapping-item">
+                        <div class="mapping-original">${formatChordName(m.chord)}</div>
+                        <div class="mapping-arrow">→</div>
+                        <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
+                            ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        document.getElementById('chordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addChords();
+        });
+
+        updateChordList();
+    </script>
+</body>
+</html>
