@@ -72,6 +72,7 @@
         .mapping-arrow { margin: 0 12px; font-weight: bold; color: #666; }
         .mapping-result { flex: 2; }
         .barre-warning { color: #ff5722; font-weight: 500; }
+        .partial-note { color: #f57c00; font-weight: 500; }
         .chord-tab { 
             font-family: 'Courier New', monospace; font-size: 12px; 
             background: #f0f0f0; padding: 8px; border-radius: 4px; 
@@ -89,6 +90,8 @@
         .position-fret { font-weight: 600; margin-right: 16px; min-width: 60px; }
         .position-count { flex: 1; }
         .position-best { color: #4caf50; font-weight: 600; }
+        .position-caret { color: #999; margin-left: 12px; font-size: 12px; }
+        .position-detail { margin: -4px 0 10px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
         .hidden { display: none; }
         .error { color: #f44336; font-size: 14px; margin-top: 8px; }
     </style>
@@ -135,69 +138,186 @@
         let currentChords = [];
         let allResults = [];
 
-        function getChordMapping(chord, capo) {
-            const baseNote = chord.replace(/[m7maj]+/, '');
-            const noteIndex = chordNotes.indexOf(baseNote);
-            if (noteIndex === -1) return null;
-            
-            // CAGED system: each note has its natural open shape
-            const openShapes = {
-                'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F', 'G': 'G', 'A': 'A',
-                'C#': 'C', 'D#': 'D', 'F#': 'F', 'G#': 'G', 'A#': 'A', 'B': 'A'
-            };
-            
-            // Open chord shapes that don't require barre
-            const openChords = ['C', 'D', 'E', 'G', 'A', 'Am', 'Dm', 'Em'];
-            
-            const targetNote = chordNotes[(noteIndex + capo) % 12];
-            const shape = openShapes[targetNote];
-            
-            // Determine if it's a barre chord
-            let isBarre = true;
-            if (capo === 0) {
-                // At capo 0, check if it's naturally an open chord
-                isBarre = !openChords.includes(chord);
-            } else {
-                // With capo, check if the resulting shape would be open
-                const resultChord = chord.includes('m') ? targetNote + 'm' : targetNote;
-                isBarre = !openChords.includes(resultChord);
-            }
-            
-            return {shape, barre: isBarre, tab: getChordTab(chord, capo)};
-        }
-        
-        function getChordTab(chord, capo) {
-            const baseNote = chord.replace(/[m7maj]+/, '');
-            const noteIndex = chordNotes.indexOf(baseNote);
-            const targetNote = chordNotes[(noteIndex + capo) % 12];
-            const isMinor = chord.includes('m') && !chord.includes('maj');
-            
-            // Basic chord tabs (relative to capo)
-            const tabs = {
-                'C': isMinor ? 'x32010' : 'x32010',
-                'D': isMinor ? 'xx0231' : 'xx0232', 
-                'E': isMinor ? '022000' : '022100',
-                'F': isMinor ? '133111' : '133211',
-                'G': isMinor ? '355333' : '320003',
-                'A': isMinor ? 'x02210' : 'x02220',
-                'C#': '446664', 'D#': '668886', 'F#': '244322',
-                'G#': '466544', 'A#': '688766', 'B': isMinor ? '224432' : '224442'
-            };
-            
-            let tab = tabs[targetNote] || 'x02220';
-            
-            // Adjust for capo position
-            if (capo > 0) {
-                tab = tab.split('').map(fret => {
-                    if (fret === 'x' || fret === '0') return fret;
-                    return String(parseInt(fret) + capo);
-                }).join('');
-            }
-            
-            return tab;
-        }
-        
         const chordNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // Open-position shapes per chord quality. Frets are given at the nut
+        // (open position). A capo raises every fretted/open note by `capo`
+        // semitones, so an open shape played behind a capo sounds `capo`
+        // semitones higher than its open root. To SOUND a chord rooted at
+        // note R with the capo on fret N, you finger the shape rooted at
+        // (R - N) mod 12. If an open shape exists for that root, no barre is
+        // needed (the capo acts as the nut); otherwise a movable barre shape
+        // is required.
+        //
+        // Tabs are low-E..high-E, one character per string:
+        //   'x' = muted, '0' = open (relative to the shape's nut).
+        const openShapeTabs = {
+            major: { 'C': 'x32010', 'A': 'x02220', 'G': '320003', 'E': '022100', 'D': 'xx0232' },
+            minor: { 'A': 'x02210', 'E': '022000', 'D': 'xx0231' },
+            '7':   { 'C': 'x32310', 'A': 'x02020', 'G': '320001', 'E': '020100', 'D': 'xx0212', 'B': 'x21202' },
+            m7:    { 'A': 'x02010', 'E': '020000', 'D': 'xx0211', 'B': 'x20202' },
+            maj7:  { 'C': 'x32000', 'A': 'x02120', 'G': '320002', 'E': '021100', 'D': 'xx0222', 'F': 'xx3210' }
+        };
+
+        // Movable "partial" voicings rooted on the D string with the low two
+        // "Partial" (bass-muted) voicings: take a movable barre chord and drop
+        // the low string(s), leaving a compact grip rooted on the D string —
+        // the natural "barre chord without the bottom strings." It sits at the
+        // same low position the barre would (e.g. Bm as xx4432, small F as
+        // xx3211), never crammed high up the neck.
+        //
+        // Two families, both keeping the root on the D string:
+        //   E-shape barre (133211-style) with the low E and A dropped.
+        //   A-shape barre (x133xx-style) with the low E and A dropped.
+        // Only major/minor are offered: the 4-note seventh A/E-shapes lose the
+        // root when the bass strings go, so those fall through to a real barre.
+        // Each entry is the full barre tab (low-E..high-E); the mapping masks
+        // the bottom two strings and positions it at the barre fret.
+        const partialBarreShapes = {
+            major: { E: '133211', A: 'x13331' },
+            minor: { E: '133111', A: 'x13321' }
+        };
+
+        // Movable barre shapes (E-shape rooted on the low-E string, A-shape
+        // rooted on the A string) used when no open shape is available.
+        // Fret numbers are relative to the barre; the barre position is added
+        // per capo/root below.
+        const barreShapes = {
+            major: { E: '133211', A: 'x13331' },
+            minor: { E: '133111', A: 'x13321' },
+            '7':   { E: '131211', A: 'x13131' },
+            m7:    { E: '131111', A: 'x13121' },
+            maj7:  { E: '132111', A: 'x13231' }
+        };
+
+        function qualityKey(chord) {
+            const q = chord.slice(rootLength(chord));
+            if (q === '') return 'major';
+            if (q === 'm') return 'minor';
+            if (q === '7') return '7';
+            if (q === 'm7') return 'm7';
+            if (q === 'maj7') return 'maj7';
+            return 'major';
+        }
+
+        function rootLength(chord) {
+            return (chord.length > 1 && (chord[1] === '#' || chord[1] === 'b')) ? 2 : 1;
+        }
+
+        function rootIndex(chord) {
+            let root = chord.slice(0, rootLength(chord));
+            // Normalize flats to sharps.
+            const flatToSharp = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#', 'Cb': 'B', 'Fb': 'E' };
+            if (flatToSharp[root]) root = flatToSharp[root];
+            return chordNotes.indexOf(root);
+        }
+
+        // Parse a compact shape pattern (e.g. 'x02220', 'xx0232') into an array
+        // of per-string frets: a number, or null for a muted ('x') string.
+        // Patterns only ever use single-digit open-position frets, so char-wise
+        // parsing is unambiguous here.
+        function tabToFrets(pattern) {
+            return pattern.split('').map(ch => (ch === 'x' ? null : parseInt(ch, 10)));
+        }
+
+        // Package a fret array into the mapping's display fields. `frets` holds
+        // absolute fret numbers (as fretted on the neck). `relFrets` expresses
+        // the same shape from the capo's perspective by subtracting the capo
+        // position, which is how a player reading behind the capo sees it.
+        function finalizeMapping(frets, capo, extra) {
+            const toTokens = subtractCapo => frets.map(f => {
+                if (f === null) return 'x';
+                return String(subtractCapo ? f - capo : f);
+            });
+            const relTokens = toTokens(true);
+            return Object.assign({
+                frets,
+                relTokens,
+                absTokens: toTokens(false),
+                tab: relTokens.join(' ')
+            }, extra);
+        }
+
+        // Returns the best playable shape for `chord` sounded with the capo on
+        // `capo`. Prefers an open shape (no barre); otherwise the lowest-fret
+        // movable barre shape behind the capo.
+        function getChordMapping(chord, capo) {
+            const noteIndex = rootIndex(chord);
+            if (noteIndex === -1) return null;
+
+            const quality = qualityKey(chord);
+            // Root of the shape we finger, expressed as an absolute note.
+            const shapeRootIndex = ((noteIndex - capo) % 12 + 12) % 12;
+            const shapeRootNote = chordNotes[shapeRootIndex];
+
+            const openSet = openShapeTabs[quality];
+            if (openSet && openSet[shapeRootNote]) {
+                // Open shape: fingered identically behind the capo (capo = nut).
+                // Absolute frets add the capo; the capo-relative view subtracts
+                // it back out (so an open shape reads with 0s, as at the nut).
+                const frets = tabToFrets(openSet[shapeRootNote])
+                    .map(f => f === null ? null : f + capo);
+                return finalizeMapping(frets, capo, { shape: shapeRootNote, barre: false });
+            }
+
+            // Partial (bass-muted) voicing: a barre shape with the low two
+            // strings dropped, rooted on the D string. Treated as a non-barre
+            // alternative. Build from both the E-shape and A-shape families and
+            // take whichever sits lower (and at/above the capo). This keeps
+            // e.g. Bm at the low fret-2 position (xx4432) instead of a cramped
+            // grip high on the neck.
+            const eIdx = chordNotes.indexOf('E');
+            const aIdx = chordNotes.indexOf('A');
+            const partialSet = partialBarreShapes[quality];
+            if (partialSet) {
+                const eFret = ((noteIndex - eIdx) % 12 + 12) % 12; // E-shape barre fret
+                const aFret = ((noteIndex - aIdx) % 12 + 12) % 12; // A-shape barre fret
+                const build = (barrePattern, barreFret) => {
+                    // Keep strings D,G,B,e (indices 2..5); mask low E and A.
+                    const abs = barrePattern.split('').map((ch, s) => {
+                        if (s < 2 || ch === 'x') return null;
+                        return (barreFret - 1) + parseInt(ch, 10);
+                    });
+                    const fretted = abs.filter(f => f !== null);
+                    return { abs, lowest: Math.min(...fretted), position: barreFret };
+                };
+                const options = [];
+                if (eFret > 0) options.push(build(partialSet.E, eFret));
+                if (aFret > 0) options.push(build(partialSet.A, aFret));
+                const usable = options.filter(o => o.lowest >= capo && o.lowest > 0);
+                usable.sort((a, b) => a.position - b.position);
+                if (usable.length) {
+                    const p = usable[0];
+                    return finalizeMapping(p.abs, capo,
+                        { shape: 'D', barre: false, partial: true,
+                          shapeLabel: 'partial (bass strings muted)' });
+                }
+            }
+
+            // No open or partial shape -> use a movable barre shape. Choose
+            // E-shape (rooted on low E) or A-shape (rooted on A string),
+            // whichever sits lower.
+            const eBarreFret = ((noteIndex - eIdx) % 12 + 12) % 12; // absolute fret of barre
+            const aBarreFret = ((noteIndex - aIdx) % 12 + 12) % 12;
+
+            // The capo sits at `capo`; the barre must be at/above it. Compute the
+            // fret the barre lands on relative to the nut (absolute), pick the
+            // shape whose barre is lowest but still >= capo.
+            const shapes = barreShapes[quality] || barreShapes.major;
+            const candidates = [];
+            if (eBarreFret >= capo && eBarreFret > 0) candidates.push({ letter: 'E', barreFret: eBarreFret, tab: shapes.E });
+            if (aBarreFret >= capo && aBarreFret > 0) candidates.push({ letter: 'A', barreFret: aBarreFret, tab: shapes.A });
+            // Fall back to raw positions if capo is above both roots.
+            if (candidates.length === 0) {
+                candidates.push({ letter: 'E', barreFret: eBarreFret || 12, tab: shapes.E });
+                candidates.push({ letter: 'A', barreFret: aBarreFret || 12, tab: shapes.A });
+            }
+            candidates.sort((a, b) => a.barreFret - b.barreFret);
+            const chosen = candidates[0];
+            const frets = tabToFrets(chosen.tab)
+                .map(f => f === null ? null : f + (chosen.barreFret - 1));
+            return finalizeMapping(frets, capo, { shape: chosen.letter, barre: true });
+        }
         
 
 
@@ -206,9 +326,7 @@
         }
 
         function isValidChord(chord) {
-            const baseNote = chord.replace(/[m7maj]+/, '');
-            const validTypes = /^[A-G][#]?(m|7|m7|maj7)?$/;
-            return validTypes.test(chord) && chordNotes.includes(baseNote);
+            return /^[A-G][#b]?(m|7|m7|maj7)?$/.test(chord) && rootIndex(chord) !== -1;
         }
 
         function showError(message) {
@@ -264,11 +382,10 @@
         }
 
         function formatChordName(chord) {
-            if (chord.includes('maj7')) return `${chord.replace('maj7', '')} Major 7th`;
-            if (chord.includes('m7')) return `${chord.replace('m7', '')} Minor 7th`;
-            if (chord.includes('7')) return `${chord.replace('7', '')} 7th`;
-            if (chord.includes('m')) return `${chord.replace('m', '')} Minor`;
-            return `${chord} Major`;
+            const root = chord.slice(0, rootLength(chord));
+            const quality = qualityKey(chord);
+            const label = { major: 'Major', minor: 'Minor', '7': '7th', m7: 'Minor 7th', maj7: 'Major 7th' }[quality];
+            return `${root} ${label}`;
         }
 
         function findOptimalCapo() {
@@ -277,87 +394,94 @@
             allResults = [];
             for (let capo = 0; capo <= 12; capo++) {
                 let barreCount = 0;
+                let partialCount = 0;
                 const mappings = [];
                 
                 for (const chord of currentChords) {
                     const mapping = getChordMapping(chord, capo);
                     if (mapping && mapping.barre) barreCount++;
+                    else if (mapping && mapping.partial) partialCount++;
                     mappings.push({ chord, ...mapping });
                 }
                 
-                allResults.push({ capo, barreCount, mappings });
+                allResults.push({ capo, barreCount, partialCount, mappings });
             }
             
-            allResults.sort((a, b) => a.barreCount - b.barreCount || a.capo - b.capo);
+            // Prefer positions with the fewest full barres, then the fewest
+            // bass-muted partials (they're playable but not as clean as a full
+            // open shape), then the lowest fret.
+            allResults.sort((a, b) =>
+                a.barreCount - b.barreCount ||
+                a.partialCount - b.partialCount ||
+                a.capo - b.capo);
             showResults();
+        }
+
+        function countSummary(result) {
+            const parts = [`Barre Chords: ${result.barreCount} of ${result.mappings.length}`];
+            if (result.partialCount) parts.push(`Partial: ${result.partialCount}`);
+            return parts.join(' &nbsp;•&nbsp; ');
+        }
+
+        // Shared renderer for a capo position's chord-by-chord fingerings.
+        function renderMappings(result) {
+            return `
+                <div class="mapping-header">Original → With Capo Fret ${result.capo}</div>
+                ${result.mappings.map(m => `
+                    <div class="mapping-item">
+                        <div class="mapping-original">${formatChordName(m.chord)}</div>
+                        <div class="mapping-arrow">→</div>
+                        <div class="mapping-result ${m.barre ? 'barre-warning' : (m.partial ? 'partial-note' : '')}">
+                            ${m.shapeLabel || (m.shape + ' Shape')} ${m.barre ? '(Barre) ⚠️' : (m.partial ? '(Partial)' : '(Open)')}
+                            <div class="chord-tab">
+                                <div class="tab-strings">E A D G B E</div>
+                                <div class="tab-frets">${m.relTokens.join(' ')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
         }
 
         function showResults() {
             const optimal = allResults[0];
             document.getElementById('optimalResult').innerHTML = `
                 <div class="optimal-title">🎯 OPTIMAL: Capo on Fret ${optimal.capo}</div>
-                <div class="barre-count">Barre Chords: ${optimal.barreCount} of ${optimal.mappings.length}</div>
+                <div class="barre-count">${countSummary(optimal)}</div>
             `;
-            
-            document.getElementById('mappings').innerHTML = `
-                <div class="mapping-header">Original → With Capo Fret ${optimal.capo}</div>
-                ${optimal.mappings.map(m => `
-                    <div class="mapping-item">
-                        <div class="mapping-original">${formatChordName(m.chord)}</div>
-                        <div class="mapping-arrow">→</div>
-                        <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
-                            ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
-                            <div class="chord-tab">
-                                <div class="tab-strings">E A D G B E</div>
-                                <div class="tab-frets">${m.tab.split('').join(' ')}</div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            `;
-            
+            document.getElementById('mappings').innerHTML = renderMappings(optimal);
             document.getElementById('results').classList.remove('hidden');
             document.getElementById('allPositions').classList.add('hidden');
         }
 
+        let expandedCapo = null;
+
         function showAllPositions() {
-            const bestCount = allResults[0].barreCount;
-            document.getElementById('allPositions').innerHTML = `
-                <h3>All Capo Positions</h3>
-                ${allResults.map(result => `
-                    <div class="position-item" onclick="showPositionDetails(${result.capo})">
-                        <div class="position-fret">Fret ${result.capo}</div>
-                        <div class="position-count">${result.barreCount} of ${result.mappings.length} barre chords</div>
-                        ${result.barreCount === bestCount ? '<div class="position-best">🎯 BEST</div>' : ''}
-                    </div>
-                `).join('')}
-            `;
+            expandedCapo = null;
+            renderAllPositions();
             document.getElementById('allPositions').classList.remove('hidden');
         }
 
-        function showPositionDetails(capo) {
-            const result = allResults.find(r => r.capo === capo);
-            document.getElementById('optimalResult').innerHTML = `
-                <div class="optimal-title">Capo on Fret ${result.capo}</div>
-                <div class="barre-count">Barre Chords: ${result.barreCount} of ${result.mappings.length}</div>
-            `;
-            
-            document.getElementById('mappings').innerHTML = `
-                <div class="mapping-header">Original → With Capo Fret ${result.capo}</div>
-                ${result.mappings.map(m => `
-                    <div class="mapping-item">
-                        <div class="mapping-original">${formatChordName(m.chord)}</div>
-                        <div class="mapping-arrow">→</div>
-                        <div class="mapping-result ${m.barre ? 'barre-warning' : ''}">
-                            ${m.shape} Shape ${m.barre ? '(Barre) ⚠️' : '(Open)'}
-                            <div class="chord-tab">
-                                <div class="tab-strings">E A D G B E</div>
-                                <div class="tab-frets">${m.tab.split('').join(' ')}</div>
-                            </div>
-                        </div>
+        function renderAllPositions() {
+            const best = allResults[0];
+            document.getElementById('allPositions').innerHTML = `
+                <h3>All Capo Positions</h3>
+                <div style="color:#999; font-size:13px; margin-bottom:8px;">Tap a position to see its chord shapes.</div>
+                ${allResults.map(result => `
+                    <div class="position-item" onclick="togglePositionDetails(${result.capo})">
+                        <div class="position-fret">Fret ${result.capo}</div>
+                        <div class="position-count">${result.barreCount} barre${result.partialCount ? `, ${result.partialCount} partial` : ''} of ${result.mappings.length}</div>
+                        ${result.barreCount === best.barreCount && result.partialCount === best.partialCount ? '<div class="position-best">🎯 BEST</div>' : ''}
+                        <div class="position-caret">${expandedCapo === result.capo ? '▲' : '▼'}</div>
                     </div>
+                    ${expandedCapo === result.capo ? `<div class="mappings position-detail">${renderMappings(result)}</div>` : ''}
                 `).join('')}
             `;
+        }
+
+        function togglePositionDetails(capo) {
+            expandedCapo = (expandedCapo === capo) ? null : capo;
+            renderAllPositions();
         }
 
         document.getElementById('chordInput').addEventListener('keypress', function(e) {
